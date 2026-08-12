@@ -66,29 +66,45 @@ Shared helpers referenced by the skills. Copy into a project's `.claude/scripts/
 | branch-sync.sh | Sync epic branches across the multi-repo workspace |
 | commit-archive.sh | Commit story task files and archive completion reports |
 
-## Usage
+## Usage — install into a project
 
-### Add to a project as a submodule
+The install model is **vendored + committed**: the Skills repo is the upstream
+source of truth; each project keeps its own committed copy of the bound skills,
+configured by that project's `PROJECT_HARNESS` block (see [HARNESS.md](HARNESS.md)),
+and pulls updates explicitly. Universal, binding-free skills (`graphify`,
+`notify-skill`) can instead live global in `~/.claude/skills/`.
 
-```bash
-git submodule add git@github.com:mikenelsonjr/Skills.git .claude/skills
-git commit -m "chore: add claude-skills submodule"
-```
-
-### Clone a project that uses this submodule
-
-```bash
-git clone --recurse-submodules git@github.com:mikenelsonjr/your-project.git
-# or after clone:
-git submodule update --init --recursive
-```
-
-### Update skills in a project
+Use [`scripts/sync-skills.sh`](scripts/sync-skills.sh) to install/update the bound
+skills into a project. It flattens the category layout here into the flat shape
+Claude Code needs (`engineering/run-story/` → `.claude/skills/run-story/`), copies
+`agents/` → `.claude/agents/` and `scripts/` → `.claude/scripts/`, and writes a
+`.claude/SKILLS_VERSION` marker recording the upstream commit.
 
 ```bash
-git submodule update --remote .claude/skills
-git commit -m "chore: update claude-skills"
+cd <your-project>
+
+# 1. Dry-run (default, safe) — shows NEW / UPDATE / SAME per file
+SKILLS_REPO=/path/to/Skills /path/to/Skills/scripts/sync-skills.sh
+
+# 2. Apply — writes into ./.claude, leaves changes UNSTAGED for your review
+SKILLS_REPO=/path/to/Skills /path/to/Skills/scripts/sync-skills.sh --apply
+
+# 3. Review + commit into the project
+git diff -- .claude
+git add .claude && git commit -m "chore: sync skills"
 ```
+
+- **Pull-only.** Never pushes project edits back upstream; never touches
+  `CLAUDE.md` / `PROJECT_HARNESS`.
+- **Clobber guard.** If a vendored skill has uncommitted local edits in the
+  project, `--apply` refuses (exit 3) rather than silently overwriting. Structural
+  fixes belong upstream, then re-pull; use `--force` only to intentionally discard
+  a local edit.
+- `SKILLS_REPO` defaults to a sibling `../Skills`, then `~/SoftwareProjects/Skills`.
+
+After installing, add the project's `## PROJECT_HARNESS` block to its `CLAUDE.md`
+(template in [HARNESS.md](HARNESS.md) Part 3) so the skills bind to that project's
+tracker, repos, and run harness.
 
 ## Notes
 
