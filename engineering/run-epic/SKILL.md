@@ -33,7 +33,7 @@ Replace `EL-50` with the Jira epic key.
 
 Fetch the epic and all its stories from Jira.
 
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 - Fetch the epic: summary, description, status
 - Fetch all child stories: key, summary, status, labels, priority
 

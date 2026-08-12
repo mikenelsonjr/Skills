@@ -23,8 +23,8 @@ Work from whatever is already in the conversation context. If the user passes a 
 
 **Fetching a Jira epic:**
 
-- Jira base URL: `https://elevareiq.atlassian.net/browse/`
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+- Tracker base URL: `{jira_base_url}` (default `https://elevareiq.atlassian.net/browse/`)
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 - Use `getJiraIssue` with the epic key to retrieve: `summary`, `description`, `status`, `labels`, and any child issues or issue links
 - Also call `searchJiraIssuesUsingJql` with JQL `"Epic Link" = {KEY} OR parent = {KEY}` to retrieve existing child stories — list them so you do not create duplicates
 - Read the full description, acceptance criteria, and any linked Confluence pages to understand scope
@@ -75,7 +75,7 @@ For each approved slice, publish a new Jira story. Use `createJiraIssue` with:
 - `description`: the body from the template below (Atlassian Document Format or plain markdown — use the format the MCP accepts)
 - `parent` / `Epic Link`: set to the source epic key if one was provided (e.g. `EL-50`)
 - `labels`: `["api-story"]`, `["ui-story"]`, or omit if multi-repo — match the target repo for the slice
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 
 Publish issues in dependency order (blockers first) so you can reference real issue keys in the "Blocked by" field of later issues.
 

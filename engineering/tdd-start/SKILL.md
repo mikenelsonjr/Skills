@@ -14,6 +14,17 @@ description: >
 
 Executes the TDD cycle for a story **against a frozen acceptance spec**.
 
+## Bindings
+
+Resolve each `{binding}` from the `## PROJECT_HARNESS` block in the project's
+`CLAUDE.md`; if absent, use the parenthesized fallback (current Spyglass value).
+See HARNESS.md.
+
+- `{repos}` — each has `path`, `lang`, `framework`, `suite_root`, `test` (command).
+  The two tables below (frozen-suite paths, stack/framework) are the Spyglass
+  defaults; when a `PROJECT_HARNESS` block is present, read each repo's `suite_root`
+  / `framework` / `test` from it instead.
+
 `/generate-task` has already authored and committed, per repo, one runnable
 acceptance case per AC — each currently failing with `not implemented`. That
 frozen spec is the contract. This skill does NOT author the acceptance tests;
@@ -81,7 +92,8 @@ Verify:
   /generate-task before implementation can begin. Do not author the acceptance
   tests yourself.
 
-Per-repo frozen suite locations:
+Per-repo frozen suite locations — `{repo.path}/{repo.suite_root}` for each target
+repo (resolve from `{repos}`; `{KEY}` expands to the ticket key). Spyglass defaults:
 
 | Repo | Frozen suite path |
 |---|---|
@@ -125,7 +137,8 @@ the **Figma reference** section:
   If the user types 'skip', note it and continue — the agent will flag the
   missing Figma reference again in the completion report.
 
-**Determine stack for each repo:**
+**Determine stack for each repo** (read `{repo.lang}` / `{repo.framework}` from
+`{repos}`; Spyglass defaults shown):
 
 | Repo | Stack | Test framework |
 |---|---|---|

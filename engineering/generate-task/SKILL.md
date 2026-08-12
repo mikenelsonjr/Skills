@@ -14,10 +14,24 @@ description: >
 
 # generate-task
 
-Generates a `task-{KEY}-{slug}.md` work order file for a Jira story and
-transitions it to In Progress. Run this once at the start of each story before
-writing any code. All task files live in a single central directory at the
-Spyglass monorepo root: `tasks/`.
+Generates a `task-{KEY}-{slug}.md` work order file for a tracker story and
+transitions it to the active state. Run this once at the start of each story
+before writing any code. All task files live in a single central directory at the
+workspace root: `tasks/`.
+
+## Bindings
+
+Resolve each `{binding}` from the `## PROJECT_HARNESS` block in the project's
+`CLAUDE.md`; if absent, use the parenthesized fallback (current Spyglass value) so
+Spyglass runs unchanged. See HARNESS.md.
+
+- `{workspace_root}` (default `/Users/miken/SoftwareProjects/Spyglass`)
+- `{tracker_id}` (default Jira Cloud ID `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
+- `{jira_base_url}` (default `https://elevareiq.atlassian.net/browse/`)
+- `{item_lifecycle.active}` (default `In Progress`)
+- `{repos}` — each has `path`, `lang`, `framework`, `suite_root` (with `{KEY}`
+  placeholder). Defaults are the four Spyglass repos in the table below.
+- `{base_branch}` (default `dev`)
 
 ## Invocation
 
@@ -112,8 +126,8 @@ Use the Atlassian MCP to fetch the full story. You need:
 - `parent` or `epic link` — the epic this story belongs to
 - `issuelinks` — any dependency links (Blocks / is Blocked By)
 
-Jira base URL: `https://elevareiq.atlassian.net/browse/`
-Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+Tracker base URL: `{jira_base_url}` (default `https://elevareiq.atlassian.net/browse/`)
+Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 
 If the story does not exist or cannot be fetched, stop and report the error.
 Do not create a task file for a story that cannot be verified in Jira.
@@ -203,8 +217,11 @@ when it is verified end-to-end (e.g. "UI shows the value the API returns" →
 one case in `core-api`, one in `core-webui`). Each target repo gets its own
 acceptance suite covering only its ACs.
 
-**Per-repo location** (co-located in each repo's own test tree, inside that
-repo's git history — NOT in the monorepo-root workspace):
+**Per-repo location.** For each target repo, the frozen suite lives at
+`{repo.path}/{repo.suite_root}` — co-located in that repo's own test tree, inside
+its git history, NOT in the workspace-root directory. Resolve `path` + `suite_root`
+per repo from `{repos}` (the `{KEY}` in `suite_root` expands to the ticket key).
+Spyglass defaults:
 
 | Repo | Frozen suite path |
 |---|---|
@@ -213,9 +230,13 @@ repo's git history — NOT in the monorepo-root workspace):
 | `RentManagerSyncSerivce` | `RentManagerSyncSerivce/tests/acceptance/{KEY}/` |
 | `ai-service` | `ai-service/tests/acceptance/{KEY}/` |
 
-**Placeholder case per framework** (one per AC, in that repo's suite dir):
+**Placeholder case per framework** (one per AC, in that repo's suite dir). Pick the
+template by the repo's `{repo.framework}`. The templates below cover the Spyglass
+default frameworks (junit / jasmine / pytest); a project using a different
+framework supplies its own one-failing-case-per-AC template following the same
+"fail loudly with the AC text" shape:
 
-*core-api (JUnit):* `Ac{N}AcceptanceTest.java`
+*junit (`framework: junit`):* `Ac{N}AcceptanceTest.java`
 ```java
 // AC{N}: {exact AC text}
 @Test
@@ -224,7 +245,7 @@ void should_{behavior}_when_{condition}() {
 }
 ```
 
-*core-webui (Jasmine):* `ac{N}.acceptance.spec.ts`
+*jasmine (`framework: jasmine`):* `ac{N}.acceptance.spec.ts`
 ```typescript
 // AC{N}: {exact AC text}
 it('should {behavior} when {condition}', () => {
@@ -232,7 +253,7 @@ it('should {behavior} when {condition}', () => {
 });
 ```
 
-*Python (pytest — RentManagerSyncSerivce, ai-service):* `test_ac{N}_acceptance.py`
+*pytest (`framework: pytest`):* `test_ac{N}_acceptance.py`
 ```python
 # AC{N}: {exact AC text}
 def test_should_{behavior}_when_{condition}():
@@ -496,7 +517,7 @@ Example: `task-EL-101-renewal-recommendation-endpoint.md`
 ### Step 8 — Write the task file
 
 Write the file to `tasks/task-{KEY}-{slug}.md` (central tasks directory at
-the Spyglass monorepo root).
+`{workspace_root}`, default the Spyglass monorepo root).
 
 Use the exact template below. Fill every section completely.
 Do not omit sections — use `N/A` or `⚠️ NOT SET` for genuinely empty sections.
@@ -511,7 +532,7 @@ repos:
   - {repo-name-2}
 status: active
 epic: {epic key and name}
-jira: https://elevareiq.atlassian.net/browse/{KEY}
+jira: {jira_base_url}{KEY}          # default https://elevareiq.atlassian.net/browse/{KEY}
 confluence: https://elevareiq.atlassian.net/wiki/spaces/ELEVAREIQ
 created: {YYYY-MM-DD}
 ---
@@ -701,9 +722,11 @@ without a committed frozen spec to build against.
 
 ### Step 10 — Transition the Jira ticket to In Progress
 
-Use the Atlassian MCP to transition the ticket status to **In Progress**.
+Transition the ticket status to the active state (`{item_lifecycle.active}`,
+default **In Progress**) via the tracker's tool surface (Jira MCP for
+`tracker: jira`).
 
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 - Get available transitions first with `getTransitionsForJiraIssue`
 - Find the transition ID for "In Progress"
 - Apply the transition
@@ -741,7 +764,8 @@ sub-agent immediately:
 Agent({
   description: "TDD implementation of {KEY}",
   prompt: "Run /tdd-start for the task file at tasks/task-{KEY}-{slug}.md.
-           The monorepo root is /Users/miken/SoftwareProjects/Spyglass/.
+           The workspace root is {workspace_root} (default
+           /Users/miken/SoftwareProjects/Spyglass/).
            Read only the task file to begin — do not read other files until
            the skill instructs you to. Follow every step in the tdd-start
            skill exactly. Report back when Step 7 (COMPLETION.md) is written."
@@ -761,9 +785,12 @@ agent continues.
 
 ---
 
-## Quick reference — project structure
+## Quick reference — project structure (Spyglass defaults)
 
-Monorepo root: `/Users/miken/SoftwareProjects/Spyglass/`
+Values below are the Spyglass fallbacks; `{workspace_root}` resolves from
+PROJECT_HARNESS. The base package and repo table are Spyglass-specific facts.
+
+Workspace root: `{workspace_root}` (default `/Users/miken/SoftwareProjects/Spyglass/`)
 Central tasks directory: `tasks/`
 Base package (API): `com.spyglassanalytics.core.api`
 

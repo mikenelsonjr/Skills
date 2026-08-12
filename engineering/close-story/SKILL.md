@@ -14,6 +14,20 @@ Runs after you have smoke tested the story and are satisfied with the result.
 This is the only point where implementation code gets committed. Do not run
 this skill without explicit smoke test approval from the user.
 
+## Bindings
+
+Resolve each `{binding}` from the `## PROJECT_HARNESS` block in the project's
+`CLAUDE.md`; if absent, use the parenthesized fallback (current Spyglass value).
+See HARNESS.md. Tracker ops use the tracker's tool surface (Jira MCP for
+`tracker: jira`; HARNESS.md Part 5 for Aptly / GitHub).
+
+- `{workspace_root}` (default `/Users/miken/SoftwareProjects/Spyglass`)
+- `{tracker_id}` (default Jira Cloud ID `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
+- `{jira_base_url}` (default `https://elevareiq.atlassian.net/browse/`)
+- `{item_lifecycle.ready|done}` (default `Ready` / `Done`)
+- `{project_key}` — tracker project key from `item_id_format` (default `EL`)
+- `{base_branch}` / `{pr_target}` (default `dev` / `dev`)
+
 ## Invocation
 
 ```
@@ -193,7 +207,7 @@ how. Focus on observable behaviour.
 {2-4 sentence change summary. What was built. What it does.
 Any important edge cases handled.}
 
-Resolves: https://elevareiq.atlassian.net/browse/{KEY}
+Resolves: {jira_base_url}{KEY}   # default https://elevareiq.atlassian.net/browse/{KEY}
 ```
 
 Show the full commit message to the user and ask:
@@ -213,13 +227,15 @@ Confirm the commit hash and that the commit was created successfully.
 
 ---
 
-### Step 7 — Transition Jira to Done
+### Step 7 — Transition the tracker item to Done
 
-Use the Atlassian MCP to transition the ticket to **Done**.
+Transition the item to the done state (`{item_lifecycle.done}`, default **Done**)
+using the tracker's tool surface (Jira MCP for `tracker: jira`; HARNESS.md Part 5
+for Aptly / GitHub).
 
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
-- Call `getTransitionsForJiraIssue` for the ticket key to get available transitions
-- Find the transition ID for "Done"
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
+- (Jira) Call `getTransitionsForJiraIssue` for the ticket key to get available transitions
+- Find the transition ID for `{item_lifecycle.done}` ("Done")
 - Apply the transition with `transitionJiraIssue`
 
 If the transition fails: warn the user but do not block — the commit is
@@ -235,11 +251,12 @@ within the story's code repo (the first repo listed in the task file's
 `repos:` frontmatter):
 
 ```
-mv /Users/miken/SoftwareProjects/Spyglass/tasks/task-{KEY}-{slug}.md \
-   /Users/miken/SoftwareProjects/Spyglass/tasks/archive/task-{KEY}-{slug}.md
+# {workspace_root} default: /Users/miken/SoftwareProjects/Spyglass
+mv {workspace_root}/tasks/task-{KEY}-{slug}.md \
+   {workspace_root}/tasks/archive/task-{KEY}-{slug}.md
 
-mv /Users/miken/SoftwareProjects/Spyglass/tasks/completion-{KEY}-{slug}.md \
-   /Users/miken/SoftwareProjects/Spyglass/tasks/archive/completion-{KEY}-{slug}.md
+mv {workspace_root}/tasks/completion-{KEY}-{slug}.md \
+   {workspace_root}/tasks/archive/completion-{KEY}-{slug}.md
 ```
 
 The archive move does not need to be committed — these are workflow files,
@@ -256,9 +273,9 @@ trail in `tasks/archive/`.
 Query Jira for any remaining open stories in the same epic:
 
 ```
-project = EL
+project = {project_key}          # from item_id_format, default EL
 AND "Epic Link" = {EPIC_KEY}
-AND status != Done
+AND status != {item_lifecycle.done}    # default Done
 AND issueKey != {KEY}
 ```
 
@@ -288,7 +305,7 @@ For each repo listed in the task file's `repos:` frontmatter:
    ```
    gh pr create \
      --repo {github-org}/{repo-name} \
-     --base dev \
+     --base {pr_target} \
      --head feature/{epic-key-slug} \
      --title "{title}" \
      --body "$(cat <<'EOF'
@@ -319,13 +336,13 @@ push command they should run manually, and stop.
 Query Jira for the next Ready story using JQL:
 
 ```
-project = EL
-AND status = Ready
+project = {project_key}          # default EL
+AND status = {item_lifecycle.ready}    # default Ready
 AND labels in (api-story, ui-story)
 ORDER BY priority ASC, created ASC
 ```
 
-Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 
 Report the result:
 

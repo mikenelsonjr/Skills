@@ -35,7 +35,7 @@ No arguments. Syncs all files in one pass.
 | Spyglass Project Context — AI Agent Reference | `93093890` | `PROJECT_CONTEXT.md`, `core-api/CLAUDE.md`, `core-webui/CLAUDE.md`, `RentManagerSyncSerivce/CLAUDE.md`, `ai-service/CLAUDE.md`, `pm-docs/agents/contexts/architecture-overview.md`, `pm-docs/agents/contexts/glossary.md` |
 | Spyglass Product Strategy & Architecture Direction | `95649793` | `PRODUCT_STRATEGY.md`, `pm-docs/agents/contexts/product-vision.md` |
 
-Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 
 ---
 

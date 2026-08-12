@@ -79,7 +79,7 @@ Use JQL:
 ```
 project = EL AND status = "To Do" ORDER BY priority ASC
 ```
-Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 
 ---
 
@@ -132,8 +132,8 @@ NOTES
 {agent notes from completion report, or "None"}
 
 LINKS
-  Jira:  https://elevareiq.atlassian.net/browse/EL-{KEY}
-  Task:  {repo}/tasks/task-EL-{KEY}-{slug}.md
+  Jira:  {jira_base_url}{KEY}      # default https://elevareiq.atlassian.net/browse/
+  Task:  {repo}/tasks/task-{KEY}-{slug}.md
 
 ---
 Run /close-story EL-{KEY} on the dev laptop once you're happy with it.
@@ -164,8 +164,8 @@ NEXT UP
   {list up to 5 story keys + titles}
 
 TO RESUME
-  Review and promote stories to Ready in Jira:
-  https://elevareiq.atlassian.net/browse/EL
+  Review and promote stories to the ready state in the tracker:
+  {jira_base_url}{project_key}     # default https://elevareiq.atlassian.net/browse/EL
 
   Then on the dev laptop, run:
   /generate-task {next story key}

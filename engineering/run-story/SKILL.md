@@ -36,6 +36,25 @@ conversation from inflating cost across a long story.
 
 ---
 
+## Bindings
+
+Resolve each `{binding}` below from the `## PROJECT_HARNESS` block in the project's
+`CLAUDE.md`. If the block or a key is absent, use the fallback in parentheses (the
+current Spyglass value) so Spyglass runs unchanged. Do not hardcode resolved values.
+
+- `{workspace_root}` (default `/Users/miken/SoftwareProjects/Spyglass`)
+- `{tracker}` / `{tracker_id}` (default `jira` / Cloud ID `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
+- `{item_lifecycle.ready|active|done}` (default `Ready` / `In Progress` / `Done`)
+- `{repos}` — the list of `{path, lang}` under PROJECT_HARNESS (default `core-api`,
+  `core-webui`, `RentManagerSyncSerivce`, `ai-service`)
+- `{base_branch}` (default `dev`)
+
+Tracker operations (`get_item`, `is_ready`, `set_active`, `set_done`, `next_ready`,
+`comment/link`) use the tracker's tool surface — Jira MCP for `tracker: jira`; see
+HARNESS.md Part 5 for the Aptly / GitHub mappings.
+
+---
+
 ## Phases
 
 ```
@@ -68,31 +87,31 @@ eyeball (the NULL-masquerading-as-data catch).
 
 ### Phase 0 — Pre-flight
 
-**0a. Validate the ticket.** Fetch the story from Jira (Cloud ID
-`b6770d30-bf33-4b84-8fd7-607d704d0cd1`; fields: summary, description, status,
-labels, parent epic, issuelinks).
+**0a. Validate the ticket.** Fetch the story from the tracker (`{tracker_id}`;
+fields: summary, description, status, labels, parent epic, issuelinks).
 
-- If status is not **Ready**, stop:
+- If status is not the ready state (`{item_lifecycle.ready}`), stop:
   ```
-  ⛔ {KEY} is in '{status}' — expected Ready.
-  Move the story to Ready in Jira before running /run-story.
+  ⛔ {KEY} is in '{status}' — expected {item_lifecycle.ready}.
+  Move the story to {item_lifecycle.ready} in the tracker before running /run-story.
   ```
 - **Label caveat (do not over-gate).** A missing `api-story`/`ui-story` label is
   a warning, not a blocker — bugs and canonical-layer stories are legitimately
   labeled `ai-tools`, `ingestion`, `rm-sync`, `canonical-layer`, etc. Warn and
   continue. (See `.claude/scripts/JIRA_RECIPES.md` Recipe C.)
 
-**0b. Git hygiene across the four code repos.** Cheapest place to catch the
-project's most expensive recurring bug — starting from a stale `dev`:
+**0b. Git hygiene across the code repos.** Cheapest place to catch the project's
+most expensive recurring bug — starting from a stale base branch. Iterate over
+`{repos}` and check each against `{base_branch}` (Spyglass fallback shown):
 
 ```bash
-cd /Users/miken/SoftwareProjects/Spyglass
-for r in core-api core-webui RentManagerSyncSerivce ai-service; do
+cd {workspace_root}                 # default /Users/miken/SoftwareProjects/Spyglass
+for r in {repos.path…}; do          # default: core-api core-webui RentManagerSyncSerivce ai-service
   git -C "$r" fetch origin --quiet
   cur=$(git -C "$r" branch --show-current)
-  dev_behind=$(git -C "$r" rev-list --count dev..origin/dev 2>/dev/null)
-  head_behind=$(git -C "$r" rev-list --count HEAD..origin/dev 2>/dev/null)
-  echo "$r | on:$cur | local dev behind origin/dev:${dev_behind:-?} | HEAD behind origin/dev:${head_behind:-?}"
+  dev_behind=$(git -C "$r" rev-list --count {base_branch}..origin/{base_branch} 2>/dev/null)
+  head_behind=$(git -C "$r" rev-list --count HEAD..origin/{base_branch} 2>/dev/null)
+  echo "$r | on:$cur | local {base_branch} behind origin/{base_branch}:${dev_behind:-?} | HEAD behind origin/{base_branch}:${head_behind:-?}"
 done
 ```
 
@@ -112,7 +131,7 @@ NO commit, NO Jira transition.
 Agent({
   description: "generate-task --draft for {KEY}",
   prompt: "Run /generate-task {KEY} --draft.
-           Monorepo root: /Users/miken/SoftwareProjects/Spyglass/
+           Workspace root: {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            Follow the generate-task skill's --draft mode exactly: write the task
            doc with frontmatter spec_state: draft, author the acceptance spec
            case NAMES + AC bindings as a PROPOSED (not frozen) list, and STOP —
@@ -148,7 +167,7 @@ Spawn `scout` to establish repo ground truth for this story. Read-only.
 Agent({
   description: "scout for {KEY}",
   subagent_type: "scout",
-  prompt: "Recon for {KEY}. Monorepo root: /Users/miken/SoftwareProjects/Spyglass/
+  prompt: "Recon for {KEY}. Workspace root: {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            Read the draft task doc at tasks/{task-filename} first for context,
            then produce your Recon Report per your instructions. Establish ground
            truth on every named object the story references — endpoints, columns,
@@ -172,8 +191,8 @@ those two only and does not re-read the repo.
 Agent({
   description: "verify-task for {KEY}",
   subagent_type: "verify-task",
-  prompt: "Adversarially check {KEY} for decidability. Monorepo root:
-           /Users/miken/SoftwareProjects/Spyglass/
+  prompt: "Adversarially check {KEY} for decidability. Workspace root:
+           {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            Read ONLY these two: the draft task doc at tasks/{task-filename}, and
            scout's Recon Report (below). Do NOT re-read the repo.
            Output contradictions (task assumption vs. repo reality, most
@@ -256,13 +275,14 @@ On approval, freeze and commit the (possibly edited) spec.
 Agent({
   description: "generate-task --freeze for {KEY}",
   prompt: "Run /generate-task {KEY} --freeze on the doc at tasks/{task-filename}.
-           Monorepo root: /Users/miken/SoftwareProjects/Spyglass/
+           Workspace root: {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            Follow the generate-task skill's --freeze mode exactly. The doc has
            been human-reviewed at the v2 pre-freeze gate — treat its (possibly
            edited) ACs and proposed case names as the source of truth. Write one
            placeholder test file per AC, bring up the epic branch via
            .claude/scripts/branch-sync.sh, commit the frozen suite per repo,
-           transition Jira to In Progress, and flip frontmatter to
+           transition the tracker item to {item_lifecycle.active} (default In
+           Progress), and flip frontmatter to
            spec_state: frozen. Do NOT spawn an implementation agent.
            Return: frozen case count per repo, commit hash(es), branch state,
            Jira transition result."
@@ -289,7 +309,7 @@ Report:
 Agent({
   description: "tdd-start for {KEY}",
   prompt: "Run /tdd-start tasks/{task-filename}.
-           Monorepo root: /Users/miken/SoftwareProjects/Spyglass/
+           Workspace root: {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            Follow every step in the tdd-start skill exactly.
            Context discipline: read only the task file and CLAUDE.md on startup;
            pull source files on demand.
@@ -333,7 +353,7 @@ Agent({
   description: "verify for {KEY}",
   prompt: "Independently verify the implementation of {KEY}. Do NOT read the
            builder's conversation — work only from committed code and the frozen
-           acceptance spec. Monorepo root: /Users/miken/SoftwareProjects/Spyglass/
+           acceptance spec. Workspace root: {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
 
            For EACH target repo in tasks/{task-filename}:
            1. CLEAN CHECKOUT — clean tree on the epic branch; verify what was
@@ -383,8 +403,8 @@ gate stays.
 Agent({
   description: "smoke-runner for {KEY}",
   subagent_type: "smoke-runner",
-  prompt: "Smoke pre-flight for {KEY}. Monorepo root:
-           /Users/miken/SoftwareProjects/Spyglass/
+  prompt: "Smoke pre-flight for {KEY}. Workspace root:
+           {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            Work list: the smoke-test checklist in the completion report
            (tasks/completion-{KEY}-*.md). Read tasks/{task-filename} for target
            repos and shapes. Follow your instructions exactly: bring services up
@@ -448,7 +468,7 @@ approved.
 Agent({
   description: "close-story for {KEY}",
   prompt: "Run /close-story {KEY}.
-           Monorepo root: /Users/miken/SoftwareProjects/Spyglass/
+           Workspace root: {workspace_root} (default /Users/miken/SoftwareProjects/Spyglass/)
            The smoke test has already been approved — skip the smoke test
            confirmation prompt and proceed directly to Step 2. Follow every step
            exactly. Spawn review and security-review sub-agents as the skill

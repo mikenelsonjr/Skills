@@ -208,6 +208,24 @@ board `5K9eCCqZBe3ERTswA`) unchanged.
 
 ---
 
+## Part 6 — How skills resolve bindings (the convention)
+
+Each bound skill opens with a `## Bindings` section listing the `PROJECT_HARNESS`
+keys it uses. At runtime the skill resolves each key like this:
+
+> **Resolve every `{binding}` below from the `## PROJECT_HARNESS` block in the
+> project's `CLAUDE.md`. If that block (or a specific key) is absent, use the
+> documented fallback — which is the current Spyglass value — so Spyglass runs
+> unchanged. Never hardcode a resolved value into the skill body.**
+
+Notation used in skill bodies: `{workspace_root}`, `{tracker_id}`,
+`{jira_base_url}`, `{repos}`, etc. — these are *bindings resolved from
+PROJECT_HARNESS*, not literal text. A trailing `(default: …)` on first use records
+the Spyglass fallback. This keeps Spyglass behavior identical today while letting
+another project override by editing only its `PROJECT_HARNESS` block.
+
+---
+
 ## How to onboard a new project (the checklist)
 
 1. Copy the skills into the project's `.claude/{skills,agents,scripts}` (or via the

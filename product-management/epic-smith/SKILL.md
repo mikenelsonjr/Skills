@@ -146,7 +146,7 @@ Wait for explicit confirmation. Incorporate any changes before proceeding.
 
 Use the Atlassian MCP to create the Epic.
 
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 - Project key: `EL`
 - Issue type: `Epic`
 - Summary: `{title}`
@@ -168,8 +168,9 @@ save the Epic draft to file for manual import.
 Write the final Epic markdown to:
 `pm-docs/agents/runs/epics/epic-{slug}.md`
 
-Add the Jira key to the **Links** section:
-`Jira: https://elevareiq.atlassian.net/browse/{KEY}`
+Add the tracker key to the **Links** section (`{jira_base_url}` default
+`https://elevareiq.atlassian.net/browse/`):
+`Jira: {jira_base_url}{KEY}`
 
 ---
 
@@ -179,7 +180,7 @@ Output:
 
 ```
 ✅ Epic created: {KEY} — {title}
-🔗 Jira: https://elevareiq.atlassian.net/browse/{KEY}
+🔗 Jira: {jira_base_url}{KEY}
 📄 Output file: pm-docs/agents/runs/epics/epic-{slug}.md
 
 ⚠️ Open questions that need resolution before story refinement:

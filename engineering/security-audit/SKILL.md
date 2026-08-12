@@ -26,10 +26,17 @@ the surface area shrank.
 /security-audit core-api --category rls  # one category, one repo
 ```
 
-Valid repo names: `core-api`, `core-webui`, `ai-service`, `RentManagerSyncSerivce`
+Valid repo names: the `path` of each repo in `{repos}` (PROJECT_HARNESS). Spyglass
+default: `core-api`, `core-webui`, `ai-service`, `RentManagerSyncSerivce`.
 
 Valid category names: `auth`, `rls`, `injection`, `secrets`, `input`,
 `dependencies`, `data-exposure`, `architecture`
+
+## Bindings
+
+Resolve `{workspace_root}` (default `/Users/miken/SoftwareProjects/Spyglass`) and
+`{repos}` (default the four repos above) from the `## PROJECT_HARNESS` block in the
+project's `CLAUDE.md`. See HARNESS.md.
 
 ---
 
@@ -41,7 +48,8 @@ Parse the arguments to determine which repos and categories to include.
 
 **Default (no args): all repos × all categories.**
 
-Repo root paths:
+Repo root paths — `{workspace_root}/{repo.path}` for each repo in `{repos}`.
+Spyglass defaults:
 - `core-api` → `/Users/miken/SoftwareProjects/Spyglass/core-api`
 - `core-webui` → `/Users/miken/SoftwareProjects/Spyglass/core-webui`
 - `ai-service` → `/Users/miken/SoftwareProjects/Spyglass/ai-service`

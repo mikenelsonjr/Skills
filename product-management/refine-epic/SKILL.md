@@ -30,7 +30,7 @@ Pass the epic key. All child stories will be scanned.
 Fetch the epic from Jira via Atlassian MCP, then fetch all stories
 linked to it.
 
-Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 
 JQL to fetch stories in the epic:
 ```

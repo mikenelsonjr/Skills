@@ -41,7 +41,7 @@ A story is considered complete when it has ALL of the following:
 ### Step 1 — Pull the story
 
 Fetch the full story from Jira via Atlassian MCP.
-- Cloud ID: `b6770d30-bf33-4b84-8fd7-607d704d0cd1`
+- Tracker ID: `{tracker_id}` (default `b6770d30-bf33-4b84-8fd7-607d704d0cd1`)
 - Pull: summary, description, labels, status, parent epic, issue links, priority
 
 If the story does not exist, stop and report.
