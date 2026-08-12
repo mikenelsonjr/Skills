@@ -2,6 +2,8 @@
 
 Reusable Claude Code skills, agents, and scripts organized by function. Import into any project as a git submodule.
 
+> **Porting the engineering loop to a new project?** See **[HARNESS.md](HARNESS.md)** — it separates the universal pipeline (the `run-story` loop, which works anywhere) from the ~9 project-specific bindings (tracker, repos, test runner, run harness). Each project configures those bindings in its own `CLAUDE.md` via a `## PROJECT_HARNESS` block at install time.
+
 ## Structure
 
 ```
