@@ -1,19 +1,34 @@
 ---
 name: tdd-start
 description: >
-  Start a TDD cycle for any story. Invoke after /generate-task has written
-  the TASK.md file. Reads the task file, writes tests first mapped to each AC,
-  commits the test file, then implements until all tests pass.
-  Works across all repos: core-api (Java), core-webui (Angular),
+  Run the TDD cycle for a story against a FROZEN acceptance spec that
+  /generate-task already authored and committed (one failing case per AC).
+  Reads the task file, drives each frozen case from RED to GREEN, adds its own
+  unit tests as scaffolding, and may not rename, delete, skip, or weaken any
+  frozen case. Works across all repos: core-api (Java), core-webui (Angular),
   RentManagerSyncSerivce (Python), ai-service (Python/FastAPI).
   Usage: /tdd-start task-EL-101-some-slug.md
 ---
 
 # tdd-start
 
-Executes the TDD cycle for a story. Tests are written before any implementation
-code. The test file is committed first so there is a clear record that tests
-were not written after the fact.
+Executes the TDD cycle for a story **against a frozen acceptance spec**.
+
+`/generate-task` has already authored and committed, per repo, one runnable
+acceptance case per AC — each currently failing with `not implemented`. That
+frozen spec is the contract. This skill does NOT author the acceptance tests;
+it drives each frozen case from RED to GREEN by replacing the placeholder with
+a real assertion and writing the implementation that satisfies it.
+
+Two layers of tests are in play, and they are different:
+
+1. **The frozen acceptance suite** (one case per AC, under `acceptance/{KEY}/`
+   in each repo). You did not write it and you may NOT rename, delete, skip,
+   re-bind, or weaken any case. You complete its assertion body; that is all.
+2. **Your own unit tests** (scaffolding). Write as many as you need to drive
+   out each AC — validation, happy path, error branches. These are yours to
+   author freely under the test-quality rules below. They support your work;
+   they never replace a frozen acceptance case.
 
 Supports all four main repos — test patterns and run commands adapt to the
 language and framework of the target repo.
@@ -58,6 +73,22 @@ Verify:
   `⚠️ NO ACs FOUND`, stop and tell the user the story cannot proceed
   without acceptance criteria
 - Status in frontmatter is `active`
+- **The frozen acceptance suite exists for every target repo.** The task
+  file's **Frozen acceptance spec** section lists each repo's suite path and
+  manifest. For each target repo, confirm `acceptance/{KEY}/manifest.json`
+  exists and lists one case per AC assigned to that repo. If any repo's suite
+  or manifest is missing, STOP and report: the spec must be frozen by
+  /generate-task before implementation can begin. Do not author the acceptance
+  tests yourself.
+
+Per-repo frozen suite locations:
+
+| Repo | Frozen suite path |
+|---|---|
+| `core-api` | `core-api/src/test/java/com/spyglassanalytics/core/api/acceptance/{KEY}/` |
+| `core-webui` | `core-webui/src/app/acceptance/{KEY}/` |
+| `RentManagerSyncSerivce` | `RentManagerSyncSerivce/tests/acceptance/{KEY}/` |
+| `ai-service` | `ai-service/tests/acceptance/{KEY}/` |
 
 **Special case — visual-only UI story:**
 If the story type is **UI Story** AND a Figma node ID is set AND all ACs
@@ -161,17 +192,41 @@ before moving to the next AC.
 
 ---
 
-### Step 3 — Red-green-refactor loop (one AC at a time)
+### Step 3 — Red-green-refactor loop (one frozen AC case at a time)
 
-Execute the following loop once per AC, in order. Do not write the test for
-AC2 until AC1 is green and refactored.
+Execute the following loop once per **frozen acceptance case**, in AC order.
+The cases already exist under `acceptance/{KEY}/` — your job is to drive each
+one from its `not implemented` placeholder to a real, passing assertion, with
+the implementation behind it. Do not start AC2's case until AC1's case is
+green and refactored.
+
+The hard rule for every cycle: you may fill in a frozen case's assertion body,
+but you may NOT rename it, change its AC binding, delete it, mark it skipped,
+or replace its assertion with a tautology (`assertThat(true).isTrue()`,
+`assert True`, `expect(true).toBe(true)`, etc.). If you believe a frozen case
+is genuinely wrong, STOP and report it to the orchestrator — do not edit around
+it.
 
 ---
 
-#### 3a — Write the test for this AC only
+#### 3a — Open the frozen case for this AC, and add your own unit tests
 
-Create (or add to) the test file with a single test method for the current AC.
-Do not write any other test methods yet.
+Locate the frozen acceptance case for the current AC (its name and file are in
+the manifest). It currently fails with `not implemented`.
+
+Replace the `not implemented` placeholder with a **real assertion** that
+exercises this AC through the public interface — using the per-framework
+patterns below. This is still the contract case; keep its name and AC binding
+exactly as frozen.
+
+Then write your **own unit tests** as scaffolding for the slice — as many as
+you need (validation, happy path, error branches). These live in your normal
+test files (NOT under `acceptance/{KEY}/`) and are yours to author freely under
+the test-quality rules above. The frozen case proves you built the right thing;
+your unit tests prove it works internally.
+
+The scaffolds below apply to BOTH the frozen case's assertion body and your own
+unit tests.
 
 **core-api (Java) — test class scaffold (create once, before AC1):**
 
@@ -289,61 +344,44 @@ Notes (FastAPI):
 
 ---
 
-#### 3b — Commit the test before implementing (AC1 only)
+#### 3b — (removed)
 
-For the **first AC**, commit the test file immediately after writing it,
-before writing any implementation. This creates a clear record that the test
-came first.
-
-**Java:**
-```
-git -C core-api add src/test/java/...
-git -C core-api commit -m "test({KEY}): write failing test for AC1 — {slug}"
-```
-
-**Angular:**
-```
-git -C core-webui add src/app/...
-git -C core-webui commit -m "test({KEY}): write failing test for AC1 — {slug}"
-```
-
-**Python:**
-```
-git -C {repo} add tests/
-git -C {repo} commit -m "test({KEY}): write failing test for AC1 — {slug}"
-```
-
-For AC2 and beyond: add the new test to the existing file; do not commit again
-until all ACs are green (commit happens in Step 4).
-
-If the commit fails, stop and report the error. Do not proceed to implementation.
+There is no "commit the test first" step. The frozen acceptance suite was
+already committed by /generate-task **before** any implementation existed —
+that commit is the record that tests predate the code, and it is stronger than
+a mid-loop commit because the whole contract was frozen up front. Proceed
+straight to the RED check below. The single implementation commit happens in
+Step 4.
 
 ---
 
 #### 3c — Confirm RED
 
-Run only the test for this AC and verify it **fails**:
+Run only the frozen acceptance case for this AC and verify it **fails** —
+now failing on your real assertion (not on the `not implemented` placeholder,
+which you replaced in 3a):
 
 **core-api:**
 ```
-./gradlew -p core-api test --tests "*{ClassName}Test.should_{behavior}_when_{condition}"
+./gradlew -p core-api test --tests "*acceptance.{KEY}.Ac{N}AcceptanceTest.should_{behavior}_when_{condition}"
 ```
 
 **core-webui:**
 ```
-cd core-webui && ng test --include="**/path/to/{name}.spec.ts" --watch=false
+cd core-webui && ng test --include="**/acceptance/{KEY}/ac{N}.acceptance.spec.ts" --watch=false
 ```
 
 **Python:**
 ```
-cd {repo} && python -m pytest tests/test_{module}.py::test_{behavior}_when_{condition} -v
+cd {repo} && python -m pytest tests/acceptance/{KEY}/test_ac{N}_acceptance.py -v
 ```
 
-**If the test passes without any implementation:** stop. The test is not
-testing anything real. Diagnose why (wrong class under test, wrong assertion,
-stub returning a value by accident) and fix before continuing.
+**If the case passes before you have written any implementation:** stop. Either
+your assertion is a tautology (fix it — it must actually exercise the AC) or the
+behavior already exists (verify that is truly the case before accepting it).
+A frozen case must fail on a real assertion before you implement.
 
-Report to the user: `🔴 AC{N} — test is RED (expected)`
+Report to the user: `🔴 AC{N} — frozen case is RED on a real assertion (expected)`
 
 ---
 
@@ -367,11 +405,13 @@ inject `HttpClient` directly, build URLs from `environment.apiUrl`.
 
 #### 3e — Confirm GREEN
 
-Run the same test again:
+Run the frozen acceptance case for this AC again, plus your own unit tests for
+the slice:
 
-**If it still fails:** fix the implementation. Do not move on until it passes.
+**If either still fails:** fix the implementation. Do not move on until the
+frozen case AND your unit tests pass.
 
-**If it passes:** report `🟢 AC{N} — test is GREEN`
+**If both pass:** report `🟢 AC{N} — frozen case GREEN + unit tests GREEN`
 
 ---
 
@@ -394,10 +434,28 @@ Report: `✅ AC{N} — refactored and still GREEN`
 
 ---
 
-#### 3g — Repeat for next AC
+#### 3g — Regression check, then next AC
 
-Return to 3a for the next acceptance criterion. Continue until all ACs have
-a green, refactored test.
+Before moving on, run the frozen acceptance suite **for this story so far**
+(every frozen case implemented up to and including this AC) and confirm all
+are still green — implementing this AC must not have broken an earlier one:
+
+```
+# core-api
+./gradlew -p core-api test --tests "*acceptance.{KEY}.*"
+# core-webui
+cd core-webui && ng test --include="**/acceptance/{KEY}/*.acceptance.spec.ts" --watch=false
+# python
+cd {repo} && python -m pytest tests/acceptance/{KEY}/ -v
+```
+
+If an earlier frozen case regressed, fix it before continuing. Then return to
+3a for the next acceptance criterion. Continue until every frozen case is
+green and refactored.
+
+(If your suite is slow, this per-AC regression run can be limited to the
+frozen `acceptance/{KEY}/` suite as shown above — the full repo suite still
+runs once in Step 5.)
 
 ---
 
@@ -497,6 +555,24 @@ completed: {YYYY-MM-DD}
 | AC1 | {test name} | ✅ Pass |
 | AC2 | {test name} | ✅ Pass |
 
+## Frozen spec integrity
+
+Confirm and report each of these — the run-story verify phase re-checks them
+independently, so they must be true:
+
+- [ ] Every frozen case in each repo's `acceptance/{KEY}/manifest.json` still
+      exists with its original name and AC binding
+- [ ] No frozen case still contains `not implemented` — every placeholder was
+      replaced with a real assertion
+- [ ] No frozen case was skipped, disabled, or weakened to a tautology
+- [ ] `git diff --name-only acceptance/{KEY}/` shows only assertion-body
+      changes within the frozen case files (no renamed/deleted case files,
+      no manifest edits)
+
+| Repo | Frozen cases | Placeholders remaining | All green |
+|------|-------------|------------------------|-----------|
+| {repo} | {n} | 0 | ✅ |
+
 ## Files changed
 
 - `{file path}` — {what changed}
@@ -527,11 +603,13 @@ Output:
 
 ```
 ✅ TDD cycle complete: {TICKET_KEY}
-📋 Tests: {n} passing, 0 failing ({repo(s)})
+📋 Builder-reported: {n} passing, 0 failing ({repo(s)}) — pending independent verify
+🧊 Frozen spec: {n} cases green, 0 placeholders remaining, manifest intact
 📄 Completion report: tasks/completion-{TICKET_KEY}-{slug}.md
 
-Waiting for your smoke test approval.
-Run /close-story {TICKET_KEY} once you have confirmed the behaviour.
+Verification (run-story Phase 3) will re-run the frozen suite from a clean
+checkout before the smoke gate. Run /close-story {TICKET_KEY} only after
+smoke test approval.
 ```
 
 Do not commit implementation code yet — that happens in /close-story

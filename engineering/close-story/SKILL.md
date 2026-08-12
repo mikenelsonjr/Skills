@@ -75,6 +75,28 @@ Agent({
   prompt: "Run /security-review against the current branch in {repo-path}.
            Focus on: auth/authz, RLS, injection vectors, secrets exposure,
            input validation. Report findings with severity (CRITICAL/HIGH/MEDIUM/LOW).
+
+           ALWAYS run this named tenant-scoping lens on any SQL in the diff that
+           touches core_* / rm_* / artifact-family tables (it is a recurring,
+           high-severity, single-tenant-invisible bug class — see core-api
+           CLAUDE.md 'EVERY joined/subqueried table needs its OWN tenant
+           predicate', EL-509 fix fa73965, EL-515):
+             1. Does EVERY core_* table in the query carry its OWN
+                `<alias>.customer_uuid = :customerUuid` predicate — not just the
+                driving table? Scoping core_units alone does NOT scope a
+                correlated core_recurring_charges/etc. reached via a join.
+             2. Any join/subquery bridged on `source_system_id` (or another
+                per-tenant, non-globally-unique key) WITHOUT a tenant predicate
+                on that table? That is a cross-tenant leak — flag HIGH.
+             3. Is the code relying on RLS as the backstop? For app-role bespoke
+                JDBC there is NO RLS backstop (policies are FOR SELECT TO
+                ai_query_user) — the hand-written predicate is the only isolation.
+             4. Did any customer_uuid column recently get backfilled (e.g.
+                EL-416), leaving reader code that still scopes AROUND its old
+                NULLness via a join? Expired-workaround → now-unsafe.
+           A single-tenant dev DB CANNOT reproduce these — do not treat green
+           smoke/tests as evidence of tenant isolation; read the SQL.
+
            Do not fix anything — report only."
 })
 ```
