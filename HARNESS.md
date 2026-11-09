@@ -135,6 +135,17 @@ close_helpers:  [".claude/scripts/commit-archive.sh"]
 notify:         "/notify complete {KEY}"
 ```
 
+**Optional: `seams`** (read by `scout`). Unset, scout does its full Spyglass
+recon (graphify, the migration/entity/DTO/Angular layers, cross-repo blast
+radius). Set, scout reads only the target module plus each seam whose `when`
+matches the change:
+
+```yaml
+seams:
+  - when:  "adds or changes a database migration"
+    check: ["services/api/migrations/", "every module that queries the changed tables"]
+```
+
 ### Minimal contract (single-repo, GitHub Issues, no Docker)
 
 Most projects need far less. Example for a solo Python repo tracking work in

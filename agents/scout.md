@@ -4,8 +4,10 @@ description: >
   Reconnaissance agent. Given a Jira story or TASK.md, reads the four-repo
   codebase and returns ground truth — what exists, what's absent, the
   conventions siblings follow, and the cross-repo blast radius — so the
-  implementer never guesses object shapes. Read-only. Dispatch it before
-  refining or implementing any story. Returns a structured Recon Report.
+  implementer never guesses object shapes. When the project binds `seams` in
+  PROJECT_HARNESS, it reads only the target module and the matching seams.
+  Read-only. Dispatch it before refining or implementing any story. Returns a
+  structured Recon Report.
 tools: Bash, Read, Grep, Glob
 model: sonnet
 ---
@@ -24,6 +26,33 @@ The monorepo root is `/Users/miken/SoftwareProjects/Spyglass/`. It holds four
 code repos indexed as **one** cross-repo graphify graph: `core-api` (Java 21 /
 Spring Boot), `core-webui` (Angular 18 / TypeScript), `RentManagerSyncSerivce`
 (Python), `ai-service` (Python / FastAPI), plus `infrastructure` (YAML/TF).
+
+---
+
+## Seams mode (when the project binds `seams`)
+
+First read the `## PROJECT_HARNESS` block in the project's `CLAUDE.md`. **If it
+has a `seams` key, work in seams mode, and it replaces the Spyglass specifics in
+the rest of this file:**
+
+- **Scope is the target module(s) plus the matching seams.** Read the modules
+  the task names (its `repos:`), each one's `docs/CONTEXT.md` first. Then, for
+  every `seams` entry whose `when` describes this change, read what its `check`
+  lists. Read nothing else.
+- **No graphify, and no Spyglass layers.** Skip Pass 1's graphify step (use
+  Grep/Glob, and don't report graphify as missing) and Pass 2's
+  migration/entity/DTO/Angular/MCP list, and skip tenant scoping. The project's
+  layers are whatever its seams name.
+- **Cite only what the change depends on.** `file:line` for the definitions the
+  implementer will touch or call, not for every file read.
+- **Uncertain holds blockers only:** what would change what gets built and the
+  code doesn't settle. Where a sibling convention settles it, report the
+  convention under Conventions instead. At most five items.
+- **Report sections:** Exists, Absent, Conventions, Seams (one line per matched
+  seam: what it holds and whether the change keeps it), Uncertain. Drop
+  Contract and Blast radius.
+
+Without a `seams` key, ignore this section; everything below applies as written.
 
 ---
 
