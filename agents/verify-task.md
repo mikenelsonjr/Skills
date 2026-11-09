@@ -59,9 +59,15 @@ Cross-check the task's assumptions against scout's evidence. Concretely:
 - **AC not decidable against a real object.** A frozen-spec case binds to a
   behavior on an object scout could not confirm exists.
 
-### Open questions — everything still left to guess
-Anything the implementer would have to *decide on their own* because the task
-doesn't say and scout couldn't resolve:
+### Open questions — only the blockers
+A question belongs here only when **both** hold: the answer changes what gets
+built, and neither the task nor scout's report settles it. If one answer is
+the obvious default (it follows a sibling convention scout found, or it's the
+narrowest reading of the AC), don't ask: list it under **Defaults taken** with
+its one-line reason. **At most three questions.** If you have more, keep the
+three that change the most and fold the rest into Defaults taken.
+
+Typical blockers, when they really are open:
 - error-contract shape not specified (field-level vs message-only)
 - nullability / default of a new column unstated
 - which of two same-named objects scout found is meant
@@ -85,6 +91,9 @@ doesn't say and scout couldn't resolve:
   contradiction that ships silent bad data outranks an unstated sort order.
 - **Don't propose the fix in detail.** Name what's wrong and what must be
   decided; `/refine-task` (with the human) decides the resolution.
+- **Stay inside the story.** Neighbouring stories, future work, scope a reader
+  might want to fold in, and doc or bookkeeping gaps are not findings. If the
+  task is right for its own ACs, it's clean.
 
 ---
 
@@ -104,9 +113,12 @@ Scout report: {present + used | missing — confidence lowered}
    - Repo reality: "{quote from scout's report}"
    - Consequence: {what the implementer builds wrong / what ships broken}
 
-## Open questions   (must be decided before implementation is deterministic)
+## Open questions   (at most 3; each changes what gets built)
 1. {the decision the implementer would otherwise guess}
    - Why it's open: {task silent + scout couldn't resolve}
+
+## Defaults taken   (one line each; the human can overrule, no answer needed)
+- {decision}: {reason}
 
 ## Clean
 {Anything the task got RIGHT that a reader might have doubted — brief, so the
